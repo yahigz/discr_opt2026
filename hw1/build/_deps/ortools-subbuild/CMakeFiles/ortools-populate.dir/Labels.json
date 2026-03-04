@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/higz/mipt/discr_opt/hw1/build/_deps/ortools-subbuild/CMakeFiles/ortools-populate"
+		},
+		{
+			"file" : "/Users/higz/mipt/discr_opt/hw1/build/_deps/ortools-subbuild/CMakeFiles/ortools-populate.rule"
+		},
+		{
+			"file" : "/Users/higz/mipt/discr_opt/hw1/build/_deps/ortools-subbuild/CMakeFiles/ortools-populate-complete.rule"
+		},
+		{
+			"file" : "/Users/higz/mipt/discr_opt/hw1/build/_deps/ortools-subbuild/ortools-populate-prefix/src/ortools-populate-stamp/ortools-populate-build.rule"
+		},
+		{
+			"file" : "/Users/higz/mipt/discr_opt/hw1/build/_deps/ortools-subbuild/ortools-populate-prefix/src/ortools-populate-stamp/ortools-populate-configure.rule"
+		},
+		{
+			"file" : "/Users/higz/mipt/discr_opt/hw1/build/_deps/ortools-subbuild/ortools-populate-prefix/src/ortools-populate-stamp/ortools-populate-download.rule"
+		},
+		{
+			"file" : "/Users/higz/mipt/discr_opt/hw1/build/_deps/ortools-subbuild/ortools-populate-prefix/src/ortools-populate-stamp/ortools-populate-install.rule"
+		},
+		{
+			"file" : "/Users/higz/mipt/discr_opt/hw1/build/_deps/ortools-subbuild/ortools-populate-prefix/src/ortools-populate-stamp/ortools-populate-mkdir.rule"
+		},
+		{
+			"file" : "/Users/higz/mipt/discr_opt/hw1/build/_deps/ortools-subbuild/ortools-populate-prefix/src/ortools-populate-stamp/ortools-populate-patch.rule"
+		},
+		{
+			"file" : "/Users/higz/mipt/discr_opt/hw1/build/_deps/ortools-subbuild/ortools-populate-prefix/src/ortools-populate-stamp/ortools-populate-test.rule"
+		},
+		{
+			"file" : "/Users/higz/mipt/discr_opt/hw1/build/_deps/ortools-subbuild/ortools-populate-prefix/src/ortools-populate-stamp/ortools-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"ortools-populate"
+		],
+		"name" : "ortools-populate"
+	}
+}
