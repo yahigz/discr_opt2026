@@ -2,6 +2,7 @@
 #include <deque>
 #include <iostream>
 #include <numeric>
+#include <queue>
 #include <set>
 #include <vector>
 
@@ -60,6 +61,147 @@ vector<Case> generate_new_cases(const Case& c, const vector<int>& cost, const ve
     return new_cases;
 }
 
+
+struct BranchAndBoundItem {
+    int index;
+    int64_t cost;
+    int64_t weight;
+};
+
+struct BranchAndBoundCase {
+    int level;
+    int parent;
+    int64_t current_weight;
+    int64_t current_cost;
+    double best_cost;
+    bool taken;
+};
+
+pair<int64_t, vector<int>> perform_branch_and_bound(int n, int64_t max_weight, const vector<int>& cost, const vector<int64_t>& weight) {
+    vector<BranchAndBoundItem> items(n);
+    for (int i = 0; i < n; ++i) {
+        items[i] = {i, cost[i], weight[i]};
+    }
+    sort(items.begin(), items.end(), [](const BranchAndBoundItem& a, const BranchAndBoundItem& b) {
+        return a.cost * b.weight > b.cost * a.weight;
+    });
+
+    vector<int64_t> prefix_weight(n + 1, 0);
+    vector<int64_t> prefix_cost(n + 1, 0);
+    for (int i = 0; i < n; ++i) {
+        prefix_weight[i + 1] = prefix_weight[i] + items[i].weight;
+        prefix_cost[i + 1] = prefix_cost[i] + items[i].cost;
+    }
+
+    auto calculate_bound = [&](int level, int64_t current_weight, int64_t current_cost) -> double {
+        if (current_weight > max_weight) {
+            return -1.0;
+        }
+        if (level >= n) {
+            return current_cost;
+        }
+        int64_t target_weight = prefix_weight[level] + (max_weight - current_weight);
+        int full_prefix = int(upper_bound(prefix_weight.begin() + level, prefix_weight.end(), target_weight) - prefix_weight.begin()) - 1;
+        double bound = current_cost + double(prefix_cost[full_prefix] - prefix_cost[level]);
+        if (full_prefix < n) {
+            int64_t remaining_weight = target_weight - prefix_weight[full_prefix];
+            bound += double(items[full_prefix].cost) * remaining_weight / items[full_prefix].weight;
+        }
+        return bound;
+    };
+
+    int64_t best_cost = 0;
+    vector<int> best_answer;
+    vector<int> greedy_answer;
+    int64_t greedy_weight = 0;
+    for (int i = 0; i < n; ++i) {
+        if (greedy_weight + items[i].weight <= max_weight) {
+            greedy_weight += items[i].weight;
+            best_cost += items[i].cost;
+            greedy_answer.push_back(items[i].index);
+        }
+    }
+    best_answer = greedy_answer;
+    for (int i = 0; i < n; ++i) {
+        if (items[i].weight <= max_weight && items[i].cost > best_cost) {
+            best_cost = items[i].cost;
+            best_answer = {items[i].index};
+        }
+    }
+
+    vector<BranchAndBoundCase> cases;
+    cases.push_back({0, -1, 0, 0, calculate_bound(0, 0, 0), false});
+
+    priority_queue<pair<double, int>> queue;
+    queue.push({cases[0].best_cost, 0});
+    int best_case_index = -1;
+
+    auto restore_answer = [&](int case_index) {
+        vector<int> answer;
+        while (case_index != -1) {
+            const auto& current_case = cases[case_index];
+            if (current_case.taken) {
+                answer.push_back(items[current_case.level - 1].index);
+            }
+            case_index = current_case.parent;
+        }
+        return answer;
+    };
+
+    while (!queue.empty()) {
+        auto [bound, case_index] = queue.top();
+        queue.pop();
+        const auto current_case = cases[case_index];
+        if (bound <= best_cost || current_case.level >= n) {
+            continue;
+        }
+
+        const auto& current_item = items[current_case.level];
+
+        if (current_case.current_weight + current_item.weight <= max_weight) {
+            BranchAndBoundCase take_case{
+                current_case.level + 1,
+                case_index,
+                current_case.current_weight + current_item.weight,
+                current_case.current_cost + current_item.cost,
+                0.0,
+                true,
+            };
+            take_case.best_cost = calculate_bound(take_case.level, take_case.current_weight, take_case.current_cost);
+            cases.push_back(take_case);
+            int take_index = (int) cases.size() - 1;
+
+            if (take_case.current_cost > best_cost) {
+                best_cost = take_case.current_cost;
+                best_case_index = take_index;
+            }
+            if (take_case.best_cost > best_cost) {
+                queue.push({take_case.best_cost, take_index});
+            }
+        }
+
+        BranchAndBoundCase skip_case{
+            current_case.level + 1,
+            case_index,
+            current_case.current_weight,
+            current_case.current_cost,
+            0.0,
+            false,
+        };
+        skip_case.best_cost = calculate_bound(skip_case.level, skip_case.current_weight, skip_case.current_cost);
+        cases.push_back(skip_case);
+        int skip_index = (int) cases.size() - 1;
+        if (skip_case.best_cost > best_cost) {
+            queue.push({skip_case.best_cost, skip_index});
+        }
+    }
+
+    if (best_case_index != -1) {
+        best_answer = restore_answer(best_case_index);
+    }
+    return {best_cost, best_answer};
+}
+
 int main() {
     int n;
     int64_t max_weight;
@@ -93,49 +235,10 @@ int main() {
             cout << answer[i] << " ";
         }
     } else {
-        vector<int> order(n);
-        iota(order.begin(), order.end(), 0);
-        sort(order.begin(), order.end(), [&](int i, int j) {
-            return (int64_t) cost[i] * weight[j] > (int64_t) cost[j] * weight[i];
-        });
-        deque<Case> cases;
-        Case initial_case{0, 0, 0, {}};
-        complete_greedy(initial_case, cost, weight, max_weight, 0, order);
-        cases.push_back(initial_case);
-        Case answer_case = initial_case;
-        int64_t answer_cost = 0;
-        int answer_ind = 0;
-        int i = 0;
-        while (!cases.empty()) {
-            deque<Case> new_cases;
-            for (auto& c : cases) {
-                vector<Case> generated_cases = generate_new_cases(c, cost, weight, max_weight, i, order);
-                for (auto& new_case : generated_cases) {
-                    new_cases.push_back(new_case);
-                }
-            }
-            sort(new_cases.begin(), new_cases.end(), [](const Case& lhs, const Case& rhs) {
-                return lhs.best_cost > rhs.best_cost;
-            });
-            new_cases.resize(min((int) new_cases.size(), MAX_CNT_CONSIDERING));
-            cases = std::move(new_cases);
-            if (cases.empty()) {
-                break;
-            }
-            if (cases[0].best_cost > answer_cost) {
-                answer_cost = cases[0].best_cost;
-                answer_case = cases[0];
-                answer_ind = i + 1;
-            }
-            ++i;
+        auto result = perform_branch_and_bound(n, max_weight, cost, weight);
+        cout << result.first << endl;
+        for (int i = (int) result.second.size() - 1; i >= 0; --i) {
+            cout << result.second[i] + 1 << " ";
         }
-        if (answer_ind < (int) order.size()) {
-            complete_greedy(answer_case, cost, weight, max_weight, answer_ind, order);
-        }
-        cout << answer_case.current_cost << endl;
-        for (int i = (int) answer_case.items.size() - 1; i >= 0; --i) {
-            cout << answer_case.items[i] + 1 << " ";
-        }
-        cout << endl;
     }
 }
