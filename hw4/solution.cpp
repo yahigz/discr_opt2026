@@ -1,11 +1,21 @@
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <random>
 #include <vector>
 
 using namespace std;
+
+constexpr long double kAnnealInitialTempFloor = 1.0L;
+constexpr long double kAnnealMinTemp = 1e-6L;
+constexpr long double kAnnealCoolingAlpha = 0.9995L;
+constexpr int kAnnealMinIterations = 200000;
+constexpr int kAnnealMaxIterations = 3000000;
+constexpr int kAnnealIterationsPerVertex = 1200;
+constexpr int kAnnealMinTempPhaseIterations = 20000;
 
 struct Point {
     long double x;
@@ -185,6 +195,113 @@ long double edgeLen(const vector<Point>& points, int a, int b) {
     long double dx = points[a].x - points[b].x;
     long double dy = points[a].y - points[b].y;
     return hypotl(dx, dy);
+}
+
+long double tourLengthIdx(const vector<int>& order, const vector<Point>& points) {
+    int n = (int)order.size();
+    if (n <= 1) {
+        return 0.0L;
+    }
+
+    long double total = 0.0L;
+    for (int i = 0; i < n; ++i) {
+        int a = order[i];
+        int b = order[(i + 1) % n];
+        total += edgeLen(points, a, b);
+    }
+    return total;
+}
+
+// Standard 2-opt delta for replacing (a-b, c-d) with (a-c, b-d).
+long double twoOptDelta(const vector<int>& order, const vector<Point>& points, int i, int j) {
+    int a = order[i];
+    int b = order[(i + 1) % (int)order.size()];
+    int c = order[j];
+    int d = order[(j + 1) % (int)order.size()];
+
+    long double oldCost = edgeLen(points, a, b) + edgeLen(points, c, d);
+    long double newCost = edgeLen(points, a, c) + edgeLen(points, b, d);
+    return newCost - oldCost;
+}
+
+void applyTwoOptMove(vector<int>& order, int i, int j) {
+    reverse(order.begin() + i + 1, order.begin() + j + 1);
+}
+
+vector<int> improveAnnealingTwoOpt(const vector<int>& initialOrder, const vector<Point>& points) {
+    int n = (int)initialOrder.size();
+    if (n < 4) {
+        return initialOrder;
+    }
+
+    vector<int> current = initialOrder;
+    vector<int> best = current;
+
+    long double currentCost = tourLengthIdx(current, points);
+    long double bestCost = currentCost;
+
+    uint64_t seed = (uint64_t)chrono::steady_clock::now().time_since_epoch().count();
+    mt19937_64 rng(seed);
+    uniform_real_distribution<long double> prob(0.0L, 1.0L);
+
+    long double t0 = max(kAnnealInitialTempFloor, currentCost / n);
+    long double tMin = kAnnealMinTemp;
+    long double alpha = kAnnealCoolingAlpha;
+    long double temperature = t0;
+
+    int maxIters = min(
+        kAnnealMaxIterations,
+        max(kAnnealMinIterations, kAnnealIterationsPerVertex * n)
+    );
+    uniform_int_distribution<int> distI(0, n - 2);
+    int minTempIters = 0;
+
+    for (int iter = 0; iter < maxIters || minTempIters < kAnnealMinTempPhaseIterations; ++iter) {
+        int i = distI(rng);
+
+        // j must satisfy i+1 < j and not select closing adjacent edge when i==0.
+        int left = i + 2;
+        int right = n - 1;
+        if (i == 0) {
+            right = n - 2;
+        }
+        if (left > right) {
+            continue;
+        }
+
+        uniform_int_distribution<int> distJ(left, right);
+        int j = distJ(rng);
+
+        long double delta = twoOptDelta(current, points, i, j);
+        bool accept = false;
+        if (delta < 0.0L) {
+            accept = true;
+        } else {
+            long double p = expl(-delta / max(temperature, 1e-12L));
+            accept = prob(rng) < p;
+        }
+
+        if (accept) {
+            applyTwoOptMove(current, i, j);
+            currentCost += delta;
+
+            if (currentCost < bestCost) {
+                bestCost = currentCost;
+                best = current;
+            }
+        }
+
+        temperature *= alpha;
+        if (temperature < tMin) {
+            temperature = tMin;
+        }
+
+        if (temperature <= tMin) {
+            ++minTempIters;
+        }
+    }
+
+    return best;
 }
 
 void improveTwoOpt(vector<int>& order, const vector<Point>& points, int maxPasses = 10000) {
@@ -397,11 +514,7 @@ int main() {
     vector<int> orderIdx;
     if (n < 5000) {
         orderIdx = buildPolarCentroidTour(points);
-        if (n < 500) {
-            improveThreeOpt(orderIdx, points);
-        } else {
-            improveTwoOpt(orderIdx, points);
-        }
+        orderIdx = improveAnnealingTwoOpt(orderIdx, points);
     } else {
         orderIdx = buildNearestNeighborTour(points, 0);
     }
