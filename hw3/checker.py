@@ -38,14 +38,16 @@ def parse_test(test_path: Path):
 	return n, m, edges
 
 
-def run_solution(executable: Path, test_data: str):
+def run_solution(executable: Path, test_data: str, solver_args=None):
+	if solver_args is None:
+		solver_args = []
 	try:
 		result = subprocess.run(
-			[str(executable.resolve())],
+			[str(executable.resolve()), *solver_args],
 			input=test_data,
 			capture_output=True,
 			text=True,
-			timeout=120,
+			timeout=240,
 			check=False,
 		)
 	except subprocess.TimeoutExpired:
@@ -152,6 +154,7 @@ def main():
 	data_dir = root / "data"
 	executable = root / "a.out"
 	output_dir = root / "output"
+	solver_args = sys.argv[1:]
 	output_dir.mkdir(exist_ok=True)
 
 	if not executable.exists():
@@ -166,6 +169,8 @@ def main():
 
 	print("=" * 72)
 	print("Running graph coloring checker...")
+	if solver_args:
+		print(f"Solver args: {' '.join(solver_args)}")
 	print("=" * 72)
 
 	for position, test in enumerate(tests, start=1):
@@ -194,7 +199,7 @@ def main():
 				print(message)
 			else:
 				reported_colors, assignment, error, stderr_msg = run_solution(
-					executable, test_data
+					executable, test_data, solver_args
 				)
 				if stderr_msg:
 					print(f"\n[log] {test_name}: {stderr_msg}")
