@@ -5,6 +5,7 @@
 - `run.sh` - compiles selected solver and runs checker
 - `solution.cpp` - baseline coloring solver
 - `solution_rlf.cpp` - alternative coloring solver with RLF-style heuristic
+- `fcns.cpp` - FCNS-based solver with tunable heuristics
 - `checker.py` - validates coloring and calculates points
 - `config.json` - list of evaluated tests and thresholds
 - `data/` - input tests
@@ -60,10 +61,12 @@ chmod +x run.sh
 ./run.sh
 ```
 
-Optional mode argument (currently only one is supported):
+Optional mode arguments:
 
 ```bash
 ./run.sh cpp
+./run.sh rlf
+./run.sh fcns
 ```
 
 To test the RLF-based solver:
@@ -71,3 +74,22 @@ To test the RLF-based solver:
 ```bash
 ./run.sh rlf
 ```
+
+To test the FCNS solver:
+
+```bash
+./run.sh fcns
+```
+
+FCNS also accepts a UVERTEX heuristic argument that is forwarded to the solver:
+
+```bash
+./run.sh fcns brelaz
+./run.sh fcns nonsingleton
+```
+
+Notes:
+
+- `brelaz` uses the Brélaz-style UVERTEX rule.
+- `nonsingleton` uses the weaker nonsingleton UVERTEX rule.
+- If no second argument is provided, the solver defaults to `brelaz`.
