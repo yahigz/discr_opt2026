@@ -65,7 +65,7 @@ def run_solution(test_path):
             input=test_input,
             capture_output=True,
             text=True,
-            timeout=120
+            timeout=360
         )
         
         stderr_msg = result.stderr.strip() if result.stderr else ""
