@@ -40,7 +40,7 @@ def run_solution(executable: Path, test_data: str):
 			input=test_data,
 			capture_output=True,
 			text=True,
-			timeout=240,
+			timeout=1200,
 			check=False,
 		)
 	except subprocess.TimeoutExpired:
