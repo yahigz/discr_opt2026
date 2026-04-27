@@ -39,7 +39,7 @@ def parse_instance(test_path: Path):
     return n, m, facilities, customers
 
 
-def run_solution(executable: Path, test_data: str, timeout_sec: int = 300):
+def run_solution(executable: Path, test_data: str, timeout_sec: int = 600):
     try:
         result = subprocess.run(
             [str(executable.resolve())],

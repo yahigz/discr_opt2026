@@ -182,6 +182,22 @@ void SolutionCase::Solve() {
 }
 
 
+
+SolutionCase solve_statements(const Statements& original_statements) {
+    SolutionCase best_case(original_statements);
+    vector<int> banned(original_statements.n, 0);
+    vector<int> order = best_case.get_open_shops_by_rating();
+    int tries = min(NUMBER_OF_TRIES, (int)order.size());
+    for (int i = 0; i < tries; ++i) {
+        banned[order[i]] = 1;
+        SolutionCase candidate_case(original_statements, banned);
+        if (candidate_case.valid && candidate_case.answer < best_case.answer) {
+            best_case = candidate_case;
+        }
+    }
+    return best_case;
+}
+
 int main() {
     int n;
     int m;
@@ -198,18 +214,7 @@ int main() {
         cin >> demand[i] >> customer[i].first >> customer[i].second;
     }
     Statements original_statements(n, m, cost, capacity, shop, demand, customer);
-    SolutionCase best_case(original_statements);
-
-    vector<int> banned(original_statements.n, 0);
-    vector<int> order = best_case.get_open_shops_by_rating();
-    int tries = min(NUMBER_OF_TRIES, (int)order.size());
-    for (int i = 0; i < tries; ++i) {
-        banned[order[i]] = 1;
-        SolutionCase candidate_case(original_statements, banned);
-        if (candidate_case.valid && candidate_case.answer < best_case.answer) {
-            best_case = candidate_case;
-        }
-    }
+    SolutionCase best_case = solve_statements(original_statements);
 
     cout << fixed << setprecision(20) << best_case.answer << endl;
     for (int i = 0; i < original_statements.n; ++i) {

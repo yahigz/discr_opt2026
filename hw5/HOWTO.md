@@ -6,20 +6,31 @@
 - `checker.py` прогоняет все тесты из `config.json`, валидирует решение и считает баллы.
 - `config.json` содержит список тестов и пороги на 3/5 баллов.
 
-## Запуск
+
+## Интерфейс запуска через run.sh
 
 ```bash
-./run.sh
+./run.sh [solution|genetics|aboba]
 ```
 
-Скрипт:
-1. Компилирует `solution.cpp`.
-2. Запускает полный чек на всех тестах из `data/`.
+**Аргументы:**
+- `solution` — компилирует и запускает `solution.cpp`
+- `genetics` — компилирует и запускает `genetics.cpp`
+- `aboba` — компилирует и запускает `aboba.cpp`
+
+**Пример:**
+```bash
+./run.sh genetics
+```
+
+**Что делает скрипт:**
+1. Компилирует выбранный cpp-файл (`solution.cpp`, `genetics.cpp` или `aboba.cpp`).
+2. Запускает `checker.py` для проверки решения на всех тестах из `data/`.
 3. Печатает summary-таблицу с колонками:
-	- objective
-	- points за тест
-	- next threshold
-	- gap до следующего порога
+   - objective
+   - points за тест
+   - next threshold
+   - gap до следующего порога
 
 ## Формат вывода решения, который проверяет checker
 
