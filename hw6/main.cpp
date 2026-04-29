@@ -595,7 +595,7 @@ namespace DSU {
         return false;
     }
 
-    vector<vector<int>> algoPrim(const vector<pair<double, double>>& points, const Statements& stmt) {
+    vector<vector<int>> algoKruskal(const vector<pair<double, double>>& points, const Statements& stmt) {
         vector<int> parent(points.size());
         for (int i = 0; i < (int)points.size(); ++i) {
             parent[i] = i;
@@ -684,7 +684,7 @@ int main() {
         cin >> d[i] >> points[i].first >> points[i].second;
     }
     Statements statements(n, v, c, d, points);
-    vector<vector<int>> clusters = DSU::algoPrim(points, statements);
+    vector<vector<int>> clusters = DSU::algoKruskal(points, statements);
     double ans = 0;
     vector<vector<int>> tours;
     for (const auto& cluster : clusters) {
