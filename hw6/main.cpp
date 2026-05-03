@@ -493,13 +493,20 @@ struct Statements {
 };
 
 namespace DSU {
-    constexpr int kClusterDfsTimeLimitMs = 600000;
-    constexpr int kClusterDfsMaxBranchingPerLevel = 7;
+    constexpr int kClusterDfsTimeLimitMs = 20000;
+    constexpr int kClusterDfsMaxBranchingPerLevel = 5;
+	constexpr double kRelevanceDistMultiplier = 0.3;
+	constexpr int kTriesWithRelevance = 600;
 
     struct Edge {
         int a;
         int b;
         double dist;
+
+		Edge(int a, int b, double dist) : a(a), b(b), dist(dist) {}
+		Edge() : a(0), b(0), dist(0.0) {}
+
+		int relevance = 0;
     };
 
     int find_set(vector<int>& parent, int v) {
@@ -611,7 +618,7 @@ namespace DSU {
             }
         }
         sort(edges.begin(), edges.end(), [](const Edge& lhs, const Edge& rhs) {
-            return lhs.dist < rhs.dist;
+			return lhs.dist < rhs.dist;
         });
 
         int total_sets = max(0, stmt.n - 1);
@@ -629,6 +636,7 @@ namespace DSU {
         );
 
         if (!built) {
+			bool valid = true;
             while (total_sets > stmt.v) {
                 int bestA = -1;
                 int bestB = -1;
@@ -644,12 +652,77 @@ namespace DSU {
                     }
                 }
                 if (bestA == -1 || bestB == -1) {
+					valid = false;
                     break;
                 }
                 union_sets(parent, rank, capacity, bestA, bestB);
                 --total_sets;
             }
-        }
+
+			if (!valid) {
+				for (int cnt = 0; cnt < kTriesWithRelevance; ++cnt) {
+					sort(edges.begin(), edges.end(), [&](const Edge& lhs, const Edge& rhs) {
+						if (lhs.relevance != rhs.relevance) {
+							return lhs.relevance > rhs.relevance;
+						}
+						double lhsDist = lhs.dist;
+						double rhsDist = rhs.dist;
+						if (lhs.relevance > rhs.relevance) {
+							lhsDist *= kRelevanceDistMultiplier;
+						} else {
+							if (rhs.relevance > lhs.relevance) {
+								rhsDist *= kRelevanceDistMultiplier;
+							}
+						}
+						return lhsDist < rhsDist;
+					});
+					total_sets = max(0, stmt.n - 1);
+					for (int i = 0; i < (int)points.size(); ++i) {
+         			   parent[i] = i;
+        			}
+					fill(rank.begin(), rank.end(), 0);
+					capacity = stmt.d;
+					while (total_sets > stmt.v) {
+						int bestA = -1;
+						int bestB = -1;
+						double bestDist = numeric_limits<double>::infinity();
+						for (const auto& edge : edges) {
+							if (!check_can_unite(parent, capacity, edge.a, edge.b, stmt.c)) {
+								continue;
+							}
+							if (edge.dist < bestDist) {
+								bestDist = edge.dist;
+								bestA = edge.a;
+								bestB = edge.b;
+							}
+						}
+						if (bestA == -1 || bestB == -1) {
+							valid = false;
+							break;
+						}
+						union_sets(parent, rank, capacity, bestA, bestB);
+						--total_sets;
+					}
+					if (total_sets <= stmt.v) {
+						valid = true;
+						break;
+					} else {
+						int tmp = 0;;
+						for (const auto& edge : edges) {
+							if (find_set(parent, edge.a) == find_set(parent, edge.b)) {
+								++tmp;
+							}
+						}
+						for (auto& edge : edges) {
+							if (find_set(parent, edge.a) == find_set(parent, edge.b)) {
+								edge.relevance -= tmp;
+								--tmp;
+							}
+						}
+					}
+				}
+			}
+		}
 
         vector<vector<int>> buckets(stmt.n);
         for (int i = 1; i < stmt.n; ++i) {
