@@ -44,7 +44,8 @@ def run_solution(executable: Path, test_data: str, timeout_sec: int = 600):
         result = subprocess.run(
             [str(executable.resolve())],
             input=test_data,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=None,
             text=True,
             timeout=timeout_sec,
             check=False,
@@ -54,7 +55,7 @@ def run_solution(executable: Path, test_data: str, timeout_sec: int = 600):
     except Exception as error:
         return None, None, None, str(error), ""
 
-    stderr_msg = result.stderr.strip()
+    stderr_msg = ""
     if result.returncode != 0:
         message = stderr_msg or f"non-zero exit code {result.returncode}"
         return None, None, None, f"Runtime error: {message}", stderr_msg

@@ -17,6 +17,9 @@ elif [[ $1 == "genetics" ]]; then
 elif [[ $1 == "aboba" ]]; then
 	echo "Compiling aboba.cpp..."
 	g++ -O2 -std=c++17 aboba.cpp -o a.out
+elif [[ $1 == "booba" ]]; then
+	echo "Compiling booba.cpp..."
+	g++ -O2 -std=c++17 booba.cpp -o a.out
 else
 	echo "Unknown argument: $1"
 	echo "Usage: $0 [solution|genetics|aboba]"
